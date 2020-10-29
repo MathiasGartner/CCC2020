@@ -86,7 +86,7 @@ namespace CCC2020
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
 
             //var filenames = Enumerable.Range(1, 5).Select(p => "..\\..\\..\\data\\level5_" + p + ".in").ToList();
-            var filenames = new List<String>() { "..\\..\\..\\data\\level5_example.in" };
+            var filenames = new List<String>() { "..\\..\\..\\data\\test.in" };
             List<String> outputText = new List<String>();
             foreach (var filename in filenames)
             {
@@ -100,6 +100,7 @@ namespace CCC2020
                 var s = new String[] { "line1", "line2" };
                 System.IO.File.WriteAllLines(filename + ".out", s);
             }
+            Console.WriteLine("finished!");
             Console.ReadKey();
         }
     }
