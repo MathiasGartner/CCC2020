@@ -78,16 +78,51 @@ namespace CCC2020
 
     #endregion
 
+    public class PowerPlant
+    {
+        public int Id { get; set; }
+        public String Type { get; set; }
+        public double Power { get; set; }
+        public double Cost { get; set; }
+        public bool IsAvailable { get; set; }
+
+        public PowerPlant()
+        {
+        }
+    }
+
+    public class Household
+    {
+        public List<Device> Devices { get; set; }
+
+        public Household()
+        {
+            this.Devices = new List<Device>();
+        }
+    }
+
+    public class Device
+    {
+        public int Id { get; set; }
+        public DateTime LoadFrom { get; set; }
+        public DateTime LoadUntil { get; set; }
+        public TimeSpan LoadTime { get; set; }
+        public double ChargeState { get; set; }
+        public bool IsLoading { get; set; }
+        public bool IsFinished { get; set; }
+        public double Power { get; set; }
+    }
 
     class Program
     {
         static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
-
+            
             //var filenames = Enumerable.Range(1, 5).Select(p => "..\\..\\..\\data\\level5_" + p + ".in").ToList();
             var filenames = new List<String>() { "..\\..\\..\\data\\test.in" };
             List<String> outputText = new List<String>();
+
             foreach (var filename in filenames)
             {
                 Console.WriteLine(filename);
