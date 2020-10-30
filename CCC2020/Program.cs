@@ -82,6 +82,13 @@ namespace CCC2020
     {
         public int Cost { get; set; }
         public int Minute { get; set; }
+        public int AvailablePower { get; set;}
+    }
+
+    public class Consumption
+    {
+        public Price Price { get; set; }
+        public int Power { get; set; }
     }
 
     public class Task
@@ -94,6 +101,39 @@ namespace CCC2020
         public int Power { get; set; }
         public int StartInterval { get; set; }
         public int EndInterval { get; set; }
+
+        public List<Consumption> Consumptions { get; set; }
+
+        public bool HasFinished { get; set; }
+
+        public double Importance
+        {
+            get
+            {
+                return this.Power / ((double)this.EndInterval - this.StartInterval);
+            }
+        }
+
+        public Task()
+        {
+            this.Consumptions = new List<Consumption>();
+        }
+
+        public long TotalCost
+        {
+            get
+            {
+                return this.Consumptions.Select(p => p.Power * p.Price.Cost).Sum();
+            }
+        }
+
+        public int TotalPower
+        {
+            get
+            {
+                return this.Consumptions.Select(p => p.Power).Sum();
+            }
+        }
     }
 
     public class PowerOptimum
@@ -132,7 +172,7 @@ namespace CCC2020
                 {
                     sum += prices[i].Cost;
                 }
-                sums.Add(Tuple.Create<int,int>(sum, 0));
+                sums.Add(Tuple.Create<int, int>(sum, 0));
                 for (int i = t.CompletionTime; i < prices.Count; i++)
                 {
                     sum -= prices[i - t.CompletionTime].Cost;
@@ -150,6 +190,39 @@ namespace CCC2020
             var cheapestMinute = pricesInInterval.OrderBy(p => p.Cost).ThenBy(p => p.Minute).First().Minute;
             t.OptimumStartMinute = cheapestMinute;
         }
+
+        public long GetTotalBill(List<Task> tasks)
+        {
+            return tasks.Sum(p => p.TotalCost);
+        }
+
+        public void DistributeEnergy(List<Task> tasks, List<Price> prices, int maxPower, long maxBill)
+        {
+            double factor = 0.9;
+
+            var sortedTasks = tasks.OrderByDescending(p => p.Importance);
+
+            foreach (var t in sortedTasks)
+            {
+                var timeslots = prices.Skip(t.StartInterval).Take(t.EndInterval - t.StartInterval + 1).Where(p => p.AvailablePower > 0).OrderBy(p => p.Cost).ToList();
+                while (!t.HasFinished)
+                {
+                    var ts = timeslots.First();
+                    int powerToDraw = System.Convert.ToInt32(Math.Floor(ts.AvailablePower * factor));
+                    if (powerToDraw > (t.Power - t.TotalPower))
+                    {
+                        powerToDraw = (t.Power - t.TotalPower);
+                    }
+                    ts.AvailablePower -= powerToDraw;
+                    t.Consumptions.Add(new Consumption() { Power = powerToDraw, Price = ts });
+                    if (t.TotalPower == t.Power)
+                    {
+                        t.HasFinished = true;
+                    }
+                    timeslots.RemoveAt(0);
+                }
+            }
+        }
     }
 
     class Program
@@ -157,9 +230,9 @@ namespace CCC2020
         static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-GB");
-            
-            var filenames = Enumerable.Range(1, 5).Select(p => "..\\..\\..\\data\\level3_" + p + ".in").ToList();
-            //var filenames = new List<String>() { "..\\..\\..\\data\\level3_example.in" };
+
+            //var filenames = Enumerable.Range(1, 5).Select(p => "..\\..\\..\\data\\level4_" + p + ".in").ToList();
+            var filenames = new List<String>() { "..\\..\\..\\data\\level4_example.in" };
             List<String> outputText = new List<String>();
 
             foreach (var filename in filenames)
@@ -168,7 +241,7 @@ namespace CCC2020
                 string[] lines = System.IO.File.ReadAllLines(filename);
                 //int[] props = lines[0].Split(',').Select(p => p.AsInt()).ToArray();
                 int maxPower = lines[0].AsInt();
-                int maxBill = lines[1].AsInt();
+                long maxBill = lines[1].AsInt();
                 int N = lines[2].AsInt();
 
                 List<Price> prices = new List<Price>();
@@ -176,10 +249,10 @@ namespace CCC2020
 
                 for (int i = 0; i < N; i++)
                 {
-                    prices.Add(new Price() { Cost = lines[i + 1 + 2].AsInt(), Minute = i });
+                    prices.Add(new Price() { Cost = lines[i + 1 + 2].AsInt(), Minute = i , AvailablePower = maxPower});
                 }
 
-                int M = lines[N + 1].AsInt();
+                int M = lines[N + 1 + 2].AsInt();
                 for (int i = 0; i < M; i++)
                 {
                     var data = lines[i + N + 2 + 2].Split(' ').Select(p => p.AsInt()).ToArray();
@@ -188,6 +261,10 @@ namespace CCC2020
                 }
 
                 //Level4
+                PowerManager pm = new PowerManager();
+                pm.DistributeEnergy(tasks, prices, maxPower, maxBill);
+                var s = tasks.Select(p => p.Id + " " + String.Join(" ", p.Consumptions.Select(c => c.Price.Minute + " " + c.Power).ToList())).ToList();
+                s.Insert(0, M.ToString());
 
                 //Level3
                 //PowerManager pm = new PowerManager();
